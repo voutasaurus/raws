@@ -50,6 +50,14 @@ func raw(wd string) filepath.WalkFunc {
 	return filepath.WalkFunc(f)
 }
 
+const (
+	escape = "\x1b"
+
+	setPink  = escape + "[35m"
+	setGreen = escape + "[32m"
+	reset    = escape + "[0m"
+)
+
 func rawf(wd, path string) error {
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, path, nil, 0)
@@ -58,6 +66,7 @@ func rawf(wd, path string) error {
 	}
 
 	var out strings.Builder
+	out.WriteString(setPink)
 	out.WriteString(path[len(wd)+1:])
 	out.WriteString("\n")
 	found := false
@@ -67,12 +76,16 @@ func rawf(wd, path string) error {
 			if x.Kind == token.STRING && x.Value[0] == '`' {
 				found = true
 				pos := fset.Position(x.ValuePos)
-				out.WriteString(fmt.Sprintf("%4d: %s\n", pos.Line, x.Value))
+				out.WriteString(setGreen)
+				out.WriteString(fmt.Sprintf("%4d", pos.Line))
+				out.WriteString(reset)
+				out.WriteString(fmt.Sprintf(": %s\n", x.Value))
 			}
 		}
 		return true
 	})
 	if found {
+		out.WriteString("\n")
 		os.Stdout.WriteString(out.String())
 	}
 	return nil
